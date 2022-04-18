@@ -24,6 +24,8 @@ void merge_sort(std::vector<int>& vec, int begin, int end) {
   if(begin < end) {
     int mid = (begin + end) / 2;
 #pragma omp task shared(vec)
+// Why vec has to be shared for this code to work even though it's only a reference? firstprivate isn't enough?
+// Might be a bug in gcc (https://stackoverflow.com/questions/43900638/openmp-task-cant-pass-argument-by-reference)
     merge_sort(vec, begin, mid);
 #pragma omp task shared(vec)
     merge_sort(vec, mid+1, end);
