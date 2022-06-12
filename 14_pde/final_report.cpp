@@ -20,6 +20,7 @@ int main(int argc, char **argv) {
   vector<vector<double>> b(ny, vector<double>(nx));
 
   for(int n=0; n<nt; n++){
+    #pragma omp parallel for collapse(2)
     for(int j=1; j<ny-1; j++)
       for(int i=1; i<nx-1; i++){
         b[j][i] = rho * (1 / dt * 
@@ -30,14 +31,17 @@ int main(int argc, char **argv) {
     for(int it=0; it<nit; it++){
       vector<vector<double>> pn(ny, vector<double>(nx));
       copy(&p[0][0], &p[0][0]+ny*nx, &pn[0][0]);
+      #pragma omp parallel for collapse(2)
       for(int j=1; j<ny-1; j++)
         for(int i=1; i<nx-1; i++){
           p[j][i] = (pow(dy, 2) * (pn[j][i+1] + pn[j][i-1]) +
                      pow(dx, 2) * (pn[j+1][i] + pn[j-1][i]) -
                      b[j][i] * pow(dx, 2) * pow(dy, 2)) / (2 * (pow(dx, 2) + pow(dy,2)));
         }
+      #pragma omp parallel for
       for(int j=0; j<ny; j++) p[j][nx-1] = p[j][nx-2];
       copy(p[1].begin(), p[1].end(), p[0].begin());
+      #pragma omp parallel for
       for(int j=0; j<ny; j++) p[j][0] = p[j][1];
       fill(p[ny-1].begin(), p[ny-1].end(), 0);
     }
@@ -45,6 +49,7 @@ int main(int argc, char **argv) {
     vector<vector<double>> vn(ny, vector<double>(nx));
     copy(&u[0][0], &u[0][0]+ny*nx, &un[0][0]);
     copy(&v[0][0], &v[0][0]+ny*nx, &vn[0][0]);
+    #pragma omp parallel for collapse(2)
     for(int j=1; j<ny-1; j++)
       for(int i=1; i<nx-1; i++){
         u[j][i] = un[j][i] - un[j][i] * dt / dx * (un[j][i] - un[j][i - 1])
@@ -59,6 +64,7 @@ int main(int argc, char **argv) {
                            + nu * dt / pow(dy, 2) * (vn[j+1][i] - 2 * vn[j][i] + vn[j-1][i]);
       }
     fill(u[0].begin(), u[0].end(), 0);
+    #pragma omp parallel for
     for(int j=0; j<ny; j++){
       u[j][0] = 0;
       u[j][nx-1] = 0;
@@ -66,6 +72,7 @@ int main(int argc, char **argv) {
     fill(u[ny-1].begin(), u[ny-1].end(), 1);
     fill(v[0].begin(), v[0].end(), 0);
     fill(v[ny-1].begin(), v[ny-1].end(), 0);
+    #pragma omp parallel for
     for(int j=0; j<ny; j++){
       v[j][0] = 0;
       v[j][nx-1] = 0;
